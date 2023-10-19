@@ -129,6 +129,13 @@ class MyTestCase(unittest.TestCase):
         res = evaluator.eval(parsed)
         self.assertTrue(res)
 
+    def test_eval_and(self):
+        expr = 'GT(8, I4) AND GT(16, I8)'
+        parsed = self.cisaparser.parse(expr)
+        evaluator = CisaLogicEvaluator(ref_dict=self.ref_index_dict, section_responses=self.section_responses)
+        res = evaluator.eval(parsed)
+        self.assertTrue(res)
+
 
 if __name__ == '__main__':
     unittest.main()

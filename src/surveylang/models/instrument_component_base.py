@@ -1,6 +1,7 @@
 import uuid
 from surveylang.common.enumerators import ComponentType
 from typing import Generic, TypeVar, Mapping, Iterator
+from surveylang.logicelements.logicparser import CisaLogicParser
 
 
 class InstrumentComponentBase:
@@ -61,6 +62,79 @@ class InstrumentComponentBase:
 
     def __repr__(self):
         return self.__str__()
+
+
+class InstrumentLogicExpression():
+    def __init__(self, expr: str, target: str):
+        self._expr = expr
+        self.target = target
+        parser = CisaLogicParser()
+        self._parsed_expr = parser.parse(expr)
+
+    def get_expr(self) -> str:
+        return self._expr
+
+    def get_target(self) -> str:
+        return self.target
+
+    def get_cisa_logic(self):
+        return self._parsed_expr
+
+    def __str__(self):
+        return f'{self._expr} | {self.target}'
+
+
+class InstrumentLogicBlock():
+    def __init__(self, expressions: list[InstrumentLogicExpression] | None = None, target: str = '@NEXT'):
+        if expressions is None:
+            expressions = []
+        self._expressions: list[InstrumentLogicExpression] = expressions
+        self._target = target
+
+    def get_target(self) -> str:
+        return self._target
+
+    def get_expressions(self) -> list[InstrumentLogicExpression]:
+        return self._expressions
+
+    def add_expression(self, expression: InstrumentLogicExpression):
+        self._expressions.append(expression)
+
+    def remove_expression(self, expression: InstrumentLogicExpression):
+        self._expressions.remove(expression)
+
+    def clear_expressions(self):
+        self._expressions.clear()
+
+    def insert_expression_at(self, position: int, expression: InstrumentLogicExpression):
+        self._expressions.insert(position, expression)
+
+    def move_expression(self, position: int, expression: InstrumentLogicExpression):
+        self._expressions.remove(expression)
+        self.insert_expression_at(position, expression)
+
+    def move_expression_to_end(self, expression: InstrumentLogicExpression):
+        self._expressions.remove(expression)
+        self.add_expression(expression)
+
+    def move_expression_to_start(self, expression: InstrumentLogicExpression):
+        self._expressions.remove(expression)
+        self.insert_expression_at(0, expression)
+
+    def move_expression_up(self, expression: InstrumentLogicExpression):
+        position = self._expressions.index(expression)
+        if position == 0:
+            raise ValueError("Cannot move expression up")
+        self.move_expression(position - 1, expression)
+
+    def move_expression_down(self, expression: InstrumentLogicExpression):
+        position = self._expressions.index(expression)
+        if position == len(self._expressions) - 1:
+            raise ValueError("Cannot move expression down")
+        self.move_expression(position + 1, expression)
+
+    def __str__(self):
+        return f'{self._expressions}'
 
 
 T = TypeVar('T', bound=InstrumentComponentBase)
@@ -168,23 +242,23 @@ class InstrumentComponentBaseWithChildren(Generic[T], InstrumentComponentBase):
 class InstrumentComponentBaseWithLogic(Generic[T], InstrumentComponentBaseWithChildren[T]):
     def __init__(self):
         super().__init__()
-        self._entry_logic_string: str | None = None
-        self._exit_logic_string: str | None = None
+        self._entry_logic: InstrumentLogicBlock | None = None
+        self._exit_logic: InstrumentLogicBlock | None = None
         self._title: str | None = None  # Title of the segment
         self._subtitle: str | None = None  # Subtitle of the segment
         self._qnid: str | None = None  # Question Number Identifier of the segment
 
-    def get_entry_logic_string(self) -> str:
-        return self._entry_logic_string
+    def get_entry_logic(self) -> InstrumentLogicBlock:
+        return self._entry_logic
 
-    def set_entry_logic_string(self, entry_logic_string: str):
-        self._entry_logic_string = entry_logic_string
+    def set_entry_logic(self, entry_logic: InstrumentLogicBlock):
+        self._entry_logic = entry_logic
 
-    def get_exit_logic_string(self) -> str:
-        return self._exit_logic_string
+    def get_exit_logic(self) -> InstrumentLogicBlock:
+        return self._exit_logic
 
-    def set_exit_logic_string(self, exit_logic_string: str):
-        self._exit_logic_string = exit_logic_string
+    def set_exit_logic(self, exit_logic: InstrumentLogicBlock):
+        self._exit_logic = exit_logic
 
     def get_title(self) -> str:
         return self._title
